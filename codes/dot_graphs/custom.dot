@@ -1,0 +1,12 @@
+digraph {
+  "duration" ;
+  "durFromLast" ;
+  "ex" ;
+  "Total.NU" ;
+  "VperU" ;
+  edge [dir=forward,label=" 0.232 ",style="setlinewidth(1)"] "duration" -> "ex" ;
+  edge [dir=forward,label=" 0.734 ",style="setlinewidth(3.5)"] "duration" -> "Total.NU" ;
+  edge [dir=forward,label=" -0.002 ",style="setlinewidth(0.2)"] "durFromLast" -> "Total.NU" ;
+  edge [dir=forward,label=" 0.408 ",style="setlinewidth(2)"] "Total.NU" -> "ex" ;
+  edge [dir=forward,label=" 0.684 ",style="setlinewidth(3)"] "Total.NU" -> "VperU" ;
+}

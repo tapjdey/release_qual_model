@@ -1,0 +1,16 @@
+digraph {
+  "duration" ;
+  "durFromLast" ;
+  "ex" ;
+  "Total.NU" ;
+  "VperU" ;
+  edge [dir=forward] "duration" -> "Total.NU" ;
+  edge [dir=forward] "durFromLast" -> "duration" ;
+  edge [dir=forward] "durFromLast" -> "ex" ;
+  edge [dir=forward] "durFromLast" -> "Total.NU" ;
+  edge [dir=forward] "durFromLast" -> "VperU" ;
+  edge [dir=forward] "ex" -> "Total.NU" ;
+  edge [dir=forward] "ex" -> "VperU" ;
+  edge [dir=forward] "VperU" -> "duration" ;
+  edge [dir=forward] "VperU" -> "Total.NU" ;
+}
