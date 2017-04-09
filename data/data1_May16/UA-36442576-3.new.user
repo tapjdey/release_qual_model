@@ -1,0 +1,16 @@
+ga:appVersion;ga:mobileDeviceBranding;ga:mobileDeviceModel;ga:mobileDeviceInfo;ga:deviceCategory;ga:operatingSystemVersion;ga:date;ga:newUsers;ga:users;ga:sessionsPerUser
+2.0.0;HTC;PJ83100;HTC PJ83100 One X;mobile;4.1.1;20130710;8;8;3.875
+2.0.0;HTC;PJ83100;HTC PJ83100 One X;mobile;4.1.1;20130711;0;1;2.0
+2.0.0;Samsung;GT-I9300;Samsung GT-I9300 Galaxy SIII;mobile;4.1.1;20130726;1;1;2.0
+2.0.0;Samsung;GT-I9300;Samsung GT-I9300 Galaxy SIII;mobile;4.1.2;20130709;1;1;4.0
+2.0.0;Samsung;GT-I9300;Samsung GT-I9300 Galaxy SIII;mobile;4.1.2;20130710;2;2;2.5
+2.0.0;Samsung;GT-I9300;Samsung GT-I9300 Galaxy SIII;mobile;4.1.2;20130711;4;4;2.0
+2.0.0;Samsung;SGH-I337;Samsung SGH-I337 Galaxy S IV;mobile;4.2.2;20130719;1;1;1.0
+2.0.0;Samsung;SGH-I337;Samsung SGH-I337 Galaxy S IV;mobile;4.2.2;20130722;1;1;8.0
+2.0.0;Samsung;SGH-I337;Samsung SGH-I337 Galaxy S IV;mobile;4.2.2;20130723;0;1;18.0
+2.0.0;Samsung;SGH-I337;Samsung SGH-I337 Galaxy S IV;mobile;4.2.2;20130724;2;3;11.0
+2.0.0;Samsung;SGH-I337;Samsung SGH-I337 Galaxy S IV;mobile;4.2.2;20130725;4;5;6.8
+2.0.0;Samsung;SGH-I337;Samsung SGH-I337 Galaxy S IV;mobile;4.2.2;20130726;0;1;6.0
+3.0.0-SNAPSHOT;Samsung;GT-I9300;Samsung GT-I9300 Galaxy S III;mobile;4.1.2;20150325;2;2;1.0
+3.0.0-SNAPSHOT;Samsung;GT-I9300;Samsung GT-I9300 Galaxy S III;mobile;4.1.2;20150326;1;1;4.0
+3.0.0-SNAPSHOT;Samsung;GT-I9300;Samsung GT-I9300 Galaxy S III;mobile;4.1.2;20150327;1;2;1.0

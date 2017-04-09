@@ -1,0 +1,8 @@
+ga:appVersion;ga:mobileDeviceBranding;ga:mobileDeviceModel;ga:mobileDeviceInfo;ga:deviceCategory;ga:operatingSystemVersion;ga:date;ga:newUsers;ga:users;ga:sessionsPerUser
+3.0;Apple;iPhone;Apple iPhone;mobile;9.1;20151208;1;1;1.0
+3.0;Apple;iPhone;Apple iPhone;mobile;9.1;20151211;3;3;1.0
+x.y.z;Apple;iPhone;Apple iPhone;mobile;9.1;20151208;2;2;1.0
+x.y.z;Apple;iPhone;Apple iPhone;mobile;9.1;20151211;2;2;1.5
+x.y.z;Apple;iPhone;Apple iPhone;mobile;9.1;20151214;0;1;2.0
+x.y.z;Apple;iPhone;Apple iPhone;mobile;9.2;20151215;0;1;4.0
+x.y.z;Apple;iPhone;Apple iPhone;mobile;9.2;20151216;0;1;4.0

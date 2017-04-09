@@ -1,0 +1,8 @@
+ga:appVersion;ga:operatingSystemVersion;ga:date;ga:exceptions;ga:fatalExceptions;ga:newVisits;ga:visits;ga:timeOnSite
+3.0;9.1;20151208;0;0;1;1;26.0
+3.0;9.1;20151211;0;0;3;3;1653.0
+x.y.z;9.1;20151208;0;0;2;2;3978.0
+x.y.z;9.1;20151211;0;0;2;3;3035.0
+x.y.z;9.1;20151214;0;0;0;2;6944.0
+x.y.z;9.2;20151215;0;0;0;4;12051.0
+x.y.z;9.2;20151216;0;0;0;4;20872.0
