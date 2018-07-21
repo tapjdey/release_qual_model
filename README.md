@@ -1,3 +1,5 @@
-# release_qual_model
-Source code in "codes" folder, images and dot graphs too
-data is in "data" folder
+# Release Quality Model
+
+Source Code in "Code" folder
+Results in "Results" folder
+Data in "Data" folder
