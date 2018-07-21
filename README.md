@@ -4,7 +4,7 @@
 
  Code is in "Code " folder.
  
- Results in the paper are in "Result" folder
+ Results in the paper are in "Results" folder
  
  Data is in "Data" folder
  
