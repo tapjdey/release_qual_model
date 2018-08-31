@@ -1,7 +1,5 @@
 # Release Quality Model for a Mobile Software
 
-### Submitted to PROMISE 2018 conference
-
  Code is in "Code " folder.
  
  Results in the paper and the distribution of variables (log-transformed and scaled) are in "Results" folder.
