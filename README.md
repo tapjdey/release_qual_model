@@ -4,9 +4,9 @@
 
  Code is in "Code " folder.
  
- Results in the paper and the distribution of variables are in "Results" folder
+ Results in the paper and the distribution of variables are in "Results" folder.
  
- Data is in "Data" folder
+ Data is in "Data" folder.
  
  ## Instructions for running code
  
