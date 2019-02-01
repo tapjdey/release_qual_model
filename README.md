@@ -2,7 +2,7 @@
 
  Code is in "Code " folder.
  
- Results in the paper and the distribution of variables (log-transformed and scaled) are in "Results" folder.
+ Results in the paper and the distribution of variablesare in "Results" folder.
  
  Data is in "Data" folder.
  
