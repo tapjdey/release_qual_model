@@ -1,6 +1,10 @@
 # Release Quality Model for a Mobile Software
 
- Code is in "Code " folder.
+ Code for analysis of mobile apps is in "Code " folder - code.R.
+ 
+ Code for simulation study is in "Code " folder - simulation.R.
+ 
+ Code of running analysis of NPM packages in "Code/NPM" folder.
  
  Results in the paper and the distribution of variablesare in "Results" folder.
  
