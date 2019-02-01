@@ -20,7 +20,7 @@ inc <- function(x, n=1)
 # Reading and combining data-------
 ###################################
 
-file.name = "UA-36442576-4"
+file.name = "UA-40745335-3"
 # UA-40745335-3 - GA - mobile SIP for iOS
 # UA-36442576-5 - Dev - communicator for Android
 # UA-36442576-4 - GA - communicator for Android
