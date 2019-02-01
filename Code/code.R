@@ -5,141 +5,147 @@ library(plyr)
 library(bnlearn)
 library(car)
 library(randomForest)
+library(psych)
+library(data.table)
 
-
-###################################
-# Reading and combining data
-###################################
-
-#Reading .user data
-filelist <- list.files(path = "../data/data1_May16/", pattern = "*4.new.user", full.names = TRUE)
-#Reading New data
-filelist1 <- list.files(path = "../data/data1_May16/", pattern = "*4.new$", full.names = TRUE)
-
-UserFile = do.call(rbind, lapply(filelist, function(x) read.csv(file = x,sep=";",na.strings="(not set)")))
-UserFile[,7] <- as.Date(UserFile[,7],"%Y%m%d")
-UserFile[,8] <- as.integer(UserFile[,8])
-UserFile[,9] <- as.integer(UserFile[,9])
-UserFile[,10] <- as.numeric(UserFile[,10])
-UserFile <- UserFile[order(UserFile[,7]),]
-
-NewData <- do.call(rbind, lapply(filelist1, function(x) read.csv(file = x,sep=";")))
-NewData[,3] <- as.Date(as.character(NewData[,3]),"%Y%m%d")
-NewData <- NewData[order(NewData[,3]),]
-
-total = merge(NewData,UserFile,all=T)
-total = total[complete.cases(total),]
-total$ga.deviceCategory <- factor(total$ga.deviceCategory)
-total$ga.fatalExceptions <- NULL
-#total$ga.timeOnSite  <- NULL
-
-
-
-###############################################################################################################
-# Data cleaning and pre-processing
-###############################################################################################################
-
-
-#2.0.0_317 last day,2.0.0_326 first 2 days,2.0.0_350 last day, 435 last day, 2.1.0_483 last 2, 503 first, 3.0.0_197 last
-total = total[!rownames(total) %in% c(504,759,761,2010,12248,13245,13244,13825,49530,48963),]
-
-
-#collapsing all releases to get uniform curve
-releases = unique(total$ga.appVersion)
-goodrelease = c()
-rd = matrix(nrow = 0, ncol=11)
-
-for (r in sort(releases)){
-  y= total[total$ga.appVersion == r,]
-  z= ddply(y, .(ga.date), summarise,
-           nu = sum(ga.newUsers),
-           nv = sum(ga.newVisits),
-           tu = sum(ga.users),
-           tv = sum(ga.visits),
-           ex = sum(ga.exceptions),
-           tos = sum(ga.timeOnSite))
-  #removing suspicious releases
-  #if (quantile(z$nu,0.1) == quantile(z$nu,0.9) || quantile(z$nv,0.1) == quantile(z$nv,0.9)) next()
-  if (sum(z$nu) <1) next()
-  #keeping only releases with >1 days of data 
-  if(nrow(z) > 0){
-    z$cnu = cumsum(z$nu)
-    quantile(z$cnu)
-    goodrelease = c(goodrelease,r)
-    #png(paste0(r,".png"),width = 960, height = 960)
-    #pairs.panels(z)
-    #dev.off()
-    rd = rbind(rd,(c(r, min(z$ga.date), max(z$ga.date),(z[which(z$cnu > quantile(z$cnu,0.5)),]$ga.date)[1],
-                     (z[which(z$cnu > quantile(z$cnu,0.25)),]$ga.date)[1],(z[which(z$cnu > quantile(z$cnu,0.75)),]$ga.date)[1],
-                     (z[which(z$cnu >= quantile(z$cnu,0.9)),]$ga.date)[1],sum(z$nu),sum(z$ex),sum(z$nv),sum(z$tos))))
-  }
+## Functions ----------------------
+inc <- function(x, n=1)
+{
+  eval.parent(substitute(x <- x + n))
 }
 
-rd = as.data.frame(rd)
-colnames(rd) = c("Release","Mindate","Maxdate","Median","25.Quant","75.Quant","90.Quant","Total.NU","ex","Total.NV","Time.On.Site")
-rd$Total.NU = as.numeric(as.character(rd$Total.NU))
-Total.NU = as.numeric(as.character(rd$Total.NU))
-rd$Total.NV = as.numeric(as.character(rd$Total.NV))
-rd$Time.On.Site = as.numeric(as.character(rd$Time.On.Site))
 
 
-ex = as.numeric(as.character(rd$ex))
-rd$ex = ex
-rd$Mindate = as.Date(as.integer(as.character(rd$Mindate)),origin="1970-01-01")
-rd$Maxdate = as.Date(as.integer(as.character(rd$Maxdate)),origin="1970-01-01")
-rd$Median = as.Date(as.integer(as.character(rd$Median)),origin="1970-01-01")
-rd$`25.Quant` = as.Date(as.integer(as.character(rd$`25.Quant`)),origin="1970-01-01")
-rd$`75.Quant` = as.Date(as.integer(as.character(rd$`75.Quant`)),origin="1970-01-01")
-rd$`90.Quant` = as.Date(as.integer(as.character(rd$`90.Quant`)),origin="1970-01-01")
+###################################
+# Reading and combining data-------
+###################################
 
-rd$Release = as.character(rd$Release)
+file.name = "UA-36442576-4"
+# UA-40745335-3 - GA - mobile SIP for iOS
+# UA-36442576-5 - Dev - communicator for Android
+# UA-36442576-4 - GA - communicator for Android
 
-refr = rd
+#Reading .user data
+UserFile =  read.csv(file = paste0("../data/data1_May16/",file.name,".new.user"), 
+                     sep=";", na.strings="(not set)", stringsAsFactors=F)
+UserFile = UserFile[,-c(2:5)]
+UserFile$ga.date = as.Date(as.character(UserFile$ga.date),"%Y%m%d")
+UserFile$ga.newUsers = as.integer(UserFile$ga.newUsers)
+UserFile$ga.users = as.integer(UserFile$ga.users)
+UserFile$ga.sessionsPerUser = as.numeric(UserFile$ga.sessionsPerUser)
+UserFile = UserFile[complete.cases(UserFile),]
+#Reading New data
+NewFile =  read.csv(file = paste0("../data/data1_May16/",file.name,".new"), 
+                    sep=";", na.strings="(not set)", stringsAsFactors=F)
+NewFile[,3] <- as.Date(as.character(NewFile[,3]),"%Y%m%d")
 
-#Total.NU more believeable because no double counting while aggregating day by day stats
-
-refr$Release = as.factor(refr$Release)
-refr$duration = as.numeric(refr$`90.Quant` - refr$Mindate)
-refr$f.duration = as.numeric(refr$Maxdate - refr$Mindate)
-refr = refr[,-c(3:7)]
-refr$Release = NULL
-
-refr$VperU = refr$Total.NV / refr$Total.NU
-refr$Time.On.Site = refr$Time.On.Site / refr$Total.NU
-
-refr$Mindate = as.numeric(refr$Mindate)
+#Merging
+total = merge(NewFile,UserFile)
+total$ga.fatalExceptions = NULL
+total$ga.operatingSystemVersion = NULL
+total$ga.sessionsPerUser = NULL
 
 
-refr = plyr::rename(refr,c('Mindate' = 'Start.Date'))
 
-# tnv = refr$Total.NV
-refr$Total.NV = NULL
-# refr$durFromLast = NULL
-refr$f.duration = NULL
-# refr$Mindate = NULL
+##############################################
+# Data cleaning and pre-processing -----------
+##############################################
 
-# Log transform
-refr = data.frame(sapply(refr,function(x) log(x+1)))
-colnames(refr) = c("Release.Date","New.Users","Exceptions","Usage.Intensity","Release.Duration","Usage.Frequency")
+#collapsing all releases 
+# calculating daily numbers first for data correction
+temp.total = ddply(total, .(ga.appVersion, ga.date), summarise,
+                   exceptions = sum(ga.exceptions),
+                   new.visits = sum(ga.newVisits),
+                   visits = sum(ga.visits),
+                   time.on.site = sum(ga.timeOnSite),
+                   new.users = sum(ga.newUsers),
+                   users = sum(ga.users))
+
+# sorting by date
+temp.total = temp.total[order(temp.total$ga.appVersion, temp.total$ga.date), ]
+
+#Fixing Data
+temp.total$new.visits.fix = temp.total$new.visits
+temp.total$new.users.fix = temp.total$new.users
+
+for (r in unique(temp.total$ga.appVersion)){
+  t_nv = 0
+  t_nu = 0
+  tt = temp.total[which(temp.total$ga.appVersion == r), ]
+  for (dt in as.character(tt$ga.date)){
+    nv =  tt[ which(tt$ga.date == as.Date(dt)),'new.visits']
+    nu =  tt[ which(tt$ga.date == as.Date(dt)),'new.users']
+    av =  tt[ which(tt$ga.date == as.Date(dt)),'visits']
+    au =  tt[ which(tt$ga.date == as.Date(dt)),'users']
+    t_nv = t_nv + nv
+    t_nu = t_nu + nu
+    if (av > t_nv ){
+      inc(temp.total[ which(temp.total$ga.appVersion == r &
+        temp.total$ga.date == as.Date(dt)),'new.visits.fix'] ,  av - t_nv)
+      t_nv = av
+    }
+    if (au > t_nu ){
+      inc( temp.total[ which(temp.total$ga.appVersion == r &
+          temp.total$ga.date == as.Date(dt)),'new.users.fix'], au - t_nu)
+      t_nu = au
+    }
+  }
+  tt = temp.total[which(temp.total$ga.appVersion == r), ]
+  #png(paste0('./new_img/',file.name,'_',r,".png"),width = 960, height = 960)
+  #pairs.panels(tt[,c(-1)])
+  #dev.off()
+}
+
+# Checking cumulative sums for validation of fixes
+temp.total.dt = data.table(temp.total)
+temp.total.dt[ , cum.new.visits := cumsum(new.visits.fix), by=list(ga.appVersion)]
+temp.total.dt[ , cum.new.users := cumsum(new.users.fix), by=list(ga.appVersion)]
+
+
+# final collapse
+final  = ddply(temp.total.dt, .(ga.appVersion), summarise,
+               Exceptions = sum(exceptions),
+               New.Visits = sum(new.visits.fix),
+               Visits = sum(visits),
+               Time.On.Site = sum(time.on.site),
+               New.Users = sum(new.users.fix),
+               Users = sum(users),
+               Release.Date = min(ga.date),
+               End.Date = max(ga.date)
+               )
+# Variable Construction
+final$Release.Duration = as.numeric(final$End.Date - final$Release.Date + 1)
+final$Usage.Frequency = final$New.Visits/final$New.Users
+final$Usage.Intensity = final$Time.On.Site/final$New.Users
+
+
+### Final DataSet ----------
+rd = final[,c(2,6,8,10:12)]
+rd$Release.Date = as.numeric(rd$Release.Date)
+
+# Distribution
+multi.hist(rd)
+
+#log - transform due to shewness of data
+refr = data.frame(sapply(rd,function(x) log(x+1)))
+multi.hist(refr)
 
 #Scaling
 refrs = data.frame(sapply(refr,scale))
-colnames(refrs) = c("Release.Date","New.Users","Exceptions","Usage.Intensity","Release.Duration","Usage.Frequency")
+multi.hist(refrs)
+save(refrs, file = 'refrs.Rdata')
 
-###############################################
-# LR Model
-###############################################
+##############################################
+# LR Model -----------------------------------
+##############################################
 
 m = lm(Exceptions~., data = refr)
-
 summary(m)
-
 vif(m)
 
-
-###############################################
-# BN Model
-###############################################
+##############################################
+# BN Model -----------------------------------
+##############################################
 
 # Bootstrapped HC search
 boot2 = bnlearn::boot.strength(data = refrs, R = 500,  m=500, algorithm = "hc", 
@@ -147,7 +153,7 @@ boot2 = bnlearn::boot.strength(data = refrs, R = 500,  m=500, algorithm = "hc",
 plot(boot2)
 
 # Set Threshold according to plot
-avg.boot = averaged.network(boot2, threshold = 0.51)
+avg.boot = averaged.network(boot2, threshold = 1)
 graphviz.plot(avg.boot, shape = "ellipse")
 
 
@@ -163,7 +169,7 @@ empty.diff/b
 
 
 ###############################################
-# RF Model
+# RF Model ------------------------------------
 ###############################################
 
 cross.valid <- refr[sample(nrow(refr)),]
@@ -193,15 +199,15 @@ Rsq
 # variable importance plot
 varImpPlot(rf)
 
-################################################################################
-# Quality Measure
-################################################################################
-refr$Quality = log(rd$ex/rd$Total.NU+1)
+#############################################
+# Quality Variable --------------------------
+#############################################
+refr$Quality = log(rd$Exceptions/rd$New.Users+1)
 #refr$Quality = refr$Exceptions - refr$New.Users
 summary(exp(refr$Quality)-1)
 
 ###############################################
-# LR Model
+# LR Model ------------------------------------
 ###############################################
 
 m = lm(Quality~.-New.Users-Exceptions, data = refr)
@@ -214,16 +220,16 @@ vif(m)
 ###############################################
 # BN Model
 ###############################################
-refr2 = refr[,-c(2,3)]
-
+refr2 = refr[,-c(1,2)]
+refr2s = data.frame(sapply(refr2,scale))
 
 # Bootstrapped HC search
-boot2 = bnlearn::boot.strength(data = refr2, R = 500,  m=500, algorithm = "hc", 
+boot2 = bnlearn::boot.strength(data = refr2s, R = 500,  m=500, algorithm = "hc", 
                                algorithm.args = list(score = "bic-g",  restart = 100, perturb = 2))
 plot(boot2)
 
 # Set Threshold according to plot
-avg.boot = averaged.network(boot2, threshold = 0.99)
+avg.boot = averaged.network(boot2, threshold = 1)
 graphviz.plot(avg.boot, shape = "ellipse")
 
 
@@ -260,3 +266,24 @@ for(i in 1:10){
 Rsq
 # variable importance plot
 varImpPlot(rf)
+
+#####################################################
+# Timeline
+#####################################################
+library(ggplot2)
+library(reshape)
+temp.total.dt = temp.total.dt[order(temp.total.dt$ga.appVersion, temp.total.dt$ga.date), ]
+
+temp.total.dt[ , cum.ex := cumsum(exceptions), by=list(ga.appVersion)]
+temp.total.dt[ , cum.nu := cumsum(new.users.fix), by=list(ga.appVersion)]
+temp.total.dt[ , c.Q := cum.ex/cum.nu, by=list(ga.appVersion)]
+
+
+mdf <- melt(temp.total.dt, id.vars=c("ga.appVersion", 'ga.date'), measure.vars = 'c.Q')
+colnames(mdf) = c('Release.Version', 'Date', 'variable', 'Quality')
+#mdf$Quality = mdf$Quality + 1e-18
+ggplot(mdf, aes(x=Date, y=Quality, colour = Release.Version, 
+                shape = Release.Version)) + geom_point() + 
+  scale_shape_manual(values = 1:173) + geom_line() +
+  scale_y_log10() + theme_bw()
+
