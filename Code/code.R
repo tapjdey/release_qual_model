@@ -7,12 +7,25 @@ library(car)
 library(randomForest)
 library(psych)
 library(data.table)
+library(e1071)
 
 ## Functions ----------------------
 inc <- function(x, n=1)
 {
   eval.parent(substitute(x <- x + n))
 }
+
+nlog = function(x){return (sign(x)*log(abs(x)+1))}
+rcsum = function(x){
+  y = c(0, x)
+  y = y[1:length(y)-1]
+  return (x-y)
+}
+rmse <- function(error)
+{
+  sqrt(mean(error^2))
+}
+
 
 
 
@@ -24,6 +37,9 @@ file.name = "UA-40745335-3"
 # UA-40745335-3 - GA - mobile SIP for iOS
 # UA-36442576-5 - Dev - communicator for Android
 # UA-36442576-4 - GA - communicator for Android
+
+
+iflag = ifelse (file.name == 'UA-40745335-3', 1, 0)
 
 #Reading .user data
 UserFile =  read.csv(file = paste0("../data/data1_May16/",file.name,".new.user"), 
@@ -121,25 +137,24 @@ final$Usage.Intensity = final$Time.On.Site/final$New.Users
 
 ### Final DataSet ----------
 rd = final[,c(2,6,8,10:12)]
-rd$Release.Date = as.numeric(rd$Release.Date)
+rd = rd[order(rd$Release.Date),]
 
-# Distribution
-multi.hist(rd)
+refr = rd
+refr$Release.Date = as.numeric(refr$Release.Date)
 
-#log - transform due to shewness of data
-refr = data.frame(sapply(rd,function(x) log(x+1)))
-multi.hist(refr)
+refr = data.frame(sapply(refr, nlog))
 
 #Scaling
 refrs = data.frame(sapply(refr,scale))
+cor(refrs, method = 'spearman')
 multi.hist(refrs)
-save(refrs, file = 'refrs.Rdata')
+#save(refrs, file = 'refrs.Rdata')
 
 ##############################################
 # LR Model -----------------------------------
 ##############################################
 
-m = lm(Exceptions~., data = refr)
+m = lm(Exceptions~., data = refrs)
 summary(m)
 vif(m)
 
@@ -148,7 +163,7 @@ vif(m)
 ##############################################
 
 # Bootstrapped HC search
-boot2 = bnlearn::boot.strength(data = refrs, R = 500,  m=500, algorithm = "hc", 
+boot2 = bnlearn::boot.strength(data = refrs, R = 500, m = 500,  algorithm = "hc", 
                                algorithm.args = list(score = "bic-g",  restart = 100, perturb = 2))
 plot(boot2)
 
@@ -169,35 +184,23 @@ empty.diff/b
 
 
 ###############################################
-# RF Model ------------------------------------
+# RF Model: 10 times 2 fold cross-validation using optimal parameters
 ###############################################
 
-cross.valid <- refr[sample(nrow(refr)),]
-folds <- cut(seq(1,nrow(cross.valid)),breaks=10,labels=FALSE)
-cv.dd = cross.valid$Exceptions
-cross.valid$Exceptions = NULL
-Rsq = numeric(0)
+set.seed(1)
+tuneResult = tune(randomForest, Exceptions~. , 
+                  data = refrs, 
+                  ranges = list(ntree=seq(100,500, 100), mtry = 1:3),
+                  tunecontrol = tune.control(nrepeat = 10, cross = 2))
 
-for(i in 1:10){
-  testIndexes <- which(folds==i,arr.ind=TRUE)
-  testData <- cross.valid[testIndexes, ]
-  trainData <- cross.valid[-testIndexes, ]
-  yTest = cv.dd[testIndexes]
-  yTrain = cv.dd[-testIndexes]
-  
-  rf <- randomForest(x=trainData, y=yTrain, ntree=500, importance = T)
-  
-  pred <- predict(rf, testData)
-  
-  R2 = (1 - (sum((yTest-pred)^2)/sum((yTest-mean(yTest))^2)) )
-  Rsq = c(Rsq, (1 - (1-R2)*(12998/(12998-19))))
-  
-}
+rf = randomForest(Exceptions~., data= refrs,
+                  ntree = tuneResult$best.parameters$ntree, 
+                  mtry = tuneResult$best.parameters$mtry, 
+                  importance = T)
 
-# Print R-squared value
-Rsq
 # variable importance plot
 varImpPlot(rf)
+# Rsq = 1 - tuneResult$best.performance *(sample_size)/(sum((refrs$Exceptions - mean(refrs$Exceptions))^2))
 
 #############################################
 # Quality Variable --------------------------
@@ -205,6 +208,8 @@ varImpPlot(rf)
 refr$Quality = log(rd$Exceptions/rd$New.Users+1)
 #refr$Quality = refr$Exceptions - refr$New.Users
 summary(exp(refr$Quality)-1)
+refr2 = refr[,-c(1,2)]
+refr2s = data.frame(sapply(refr2,scale))
 
 ###############################################
 # LR Model ------------------------------------
@@ -220,8 +225,7 @@ vif(m)
 ###############################################
 # BN Model
 ###############################################
-refr2 = refr[,-c(1,2)]
-refr2s = data.frame(sapply(refr2,scale))
+
 
 # Bootstrapped HC search
 boot2 = bnlearn::boot.strength(data = refr2s, R = 500,  m=500, algorithm = "hc", 
@@ -237,35 +241,23 @@ graphviz.plot(avg.boot, shape = "ellipse")
 
 
 ###############################################
-# RF Model
+# RF Model: 10 times 2 fold cross-validation using optimal parameters
 ###############################################
 
-cross.valid <- refr2[sample(nrow(refr2)),]
-folds <- cut(seq(1,nrow(cross.valid)),breaks=10,labels=FALSE)
-cv.dd = cross.valid$Quality
-cross.valid$Quality = NULL
-Rsq = numeric(0)
+set.seed(1)
+tuneResult = tune(randomForest, Quality~. , 
+                  data = refr2s, 
+                  ranges = list(ntree=seq(100,500, 100), mtry = 1:3),
+                  tunecontrol = tune.control(nrepeat = 10, cross = 2))
 
-for(i in 1:10){
-  testIndexes <- which(folds==i,arr.ind=TRUE)
-  testData <- cross.valid[testIndexes, ]
-  trainData <- cross.valid[-testIndexes, ]
-  yTest = cv.dd[testIndexes]
-  yTrain = cv.dd[-testIndexes]
-  
-  rf <- randomForest(x=trainData, y=yTrain, ntree=500, importance = T)
-  
-  pred <- predict(rf, testData)
-  
-  R2 = (1 - (sum((yTest-pred)^2)/sum((yTest-mean(yTest))^2)) )
-  Rsq = c(Rsq, (1 - (1-R2)*(12998/(12998-19))))
-  
-}
+rf = randomForest(Quality~., data= refr2s,
+                  ntree = tuneResult$best.parameters$ntree, 
+                  mtry = tuneResult$best.parameters$mtry, 
+                  importance = T)
 
-# Print R-squared value
-Rsq
 # variable importance plot
 varImpPlot(rf)
+# Rsq = 1 - tuneResult$best.performance *(sample_size)/(sum((refrs$Exceptions - mean(refrs$Exceptions))^2))
 
 #####################################################
 # Timeline
@@ -287,3 +279,27 @@ ggplot(mdf, aes(x=Date, y=Quality, colour = Release.Version,
   scale_shape_manual(values = 1:173) + geom_line() +
   scale_y_log10() + theme_bw()
 
+########################################################
+# Comparative trend plot
+df = data.frame(Date = rd$Release.Date, Exceptions = refr$Exceptions, Quality = refr2$Quality )
+par(mar=c(5, 4, 4, 6) + 0.2)
+plot(df$Date, df$Exceptions, type = 'p', axes = F, pch = 10,
+     xlab = '', ylab = '', main = 'Relative Trends of Two metrics')
+axis(2, col="black",las=1)  ## las=1 makes horizontal labels
+mtext("Exceptions (Log scale)",side=2,line=2.5)
+box()
+par(new=TRUE)
+plot(df$Date, df$Quality, type = 'p', axes = F, 
+     xlab = '', ylab = '', pch = 4, col = 'red')
+axis(4, col="red",las=1, col.axis="red")  ## las=1 makes horizontal labels
+mtext("Quality Variable (Log scale)",side=4,line=4, col = 'red')
+
+## Draw the time axis
+axis(1 , at= seq(16000, 17000, 90), cex.axis = 0.85,
+     labels = format(as.Date(seq(16000, 17000, 90), origin = '1970-01-01'), '%b %Y'), las=3)
+mtext("Date",side=1,col="black",line=4.2)  
+
+## Add Legend
+#legend("topright",legend=c("Exceptions","Quality Variable"),
+#  text.col=c("black","red"),pch=c(16,4),col=c("black","red"))
+abline(v = df$Date, col = 'blue', lty=5, lwd =0.1)
