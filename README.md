@@ -4,6 +4,8 @@
  
  Code for simulation study is in "Code " folder - simulation.R.
  
+ Code for npm miner data analysis is in npmMiner.R
+ 
  Code for analysis including code metrics is in "Code" folder - with_code_metric.r
  
  Code of running analysis of NPM packages in "Code/NPM" folder.
